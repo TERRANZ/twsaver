@@ -29,6 +29,11 @@
             <artifactId>slf4j-log4j12</artifactId>
             <version>1.7.7</version>
         </dependency>
+        <dependency>
+            <groupId>ru.terra.dms</groupId>
+            <artifactId>shared</artifactId>
+            <version>1</version>
+        </dependency>
     </dependencies>
 
 
