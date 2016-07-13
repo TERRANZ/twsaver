@@ -61,59 +61,23 @@ public class Main {
                                         try {
                                             Twit twit = new ObjectMapper().readValue(msg, Twit.class);
                                             List<Medium> media = twit.getEntities().getMedia();
-                                            service.submit(() -> {
-                                                        if (media.size() > 0) {
-                                                            LoggerFactory.getLogger(Main.class).info(msg);
-                                                            for (Medium m : media) {
-                                                                try {
-                                                                    Calendar twitDate = Calendar.getInstance();
-//                                                                    twitDate.setTimeInMillis(Long.parseLong(twit.getTimestampMs()));
-                                                                    twitDate.setTime(new Date());
-                                                                    String folderName = "images/";
-                                                                    folderName += String.valueOf(twitDate.get(Calendar.MONTH) + 1);
-                                                                    folderName += "/";
-                                                                    folderName += twitDate.get(Calendar.DAY_OF_MONTH);
-                                                                    folderName += "/";
-                                                                    Main.downloadImage(folderName, m.getMediaUrl());
-                                                                } catch (IOException e) {
-                                                                    e.printStackTrace();
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                            );
+                                            if (media.size() > 0) {
+                                                LoggerFactory.getLogger(Main.class).info(msg);
+                                                service.submit(() -> media.forEach(m -> downloadImage("images/" + produceFileName(), m.getMediaUrl())));
+                                            }
                                             if (twit.getExtendedEntities() != null && twit.getExtendedEntities().getMedia() != null && twit.getExtendedEntities().getMedia().size() > 0) {
                                                 List<Medium> extendedMedia = twit.getExtendedEntities().getMedia();
-                                                service.submit(() -> {
-                                                    try {
-                                                        for (Medium m : extendedMedia) {
-                                                            if (!m.getType().equals("photo")) {
-                                                                if (m.getAdditionalProperties().containsKey("video_info")) {
-                                                                    Map video_info = (Map) m.getAdditionalProperties().get("video_info");
-                                                                    List variants = (List) video_info.get("variants");
-                                                                    if (variants.size() > 0) {
-                                                                        for (Object v : variants) {
-                                                                            Map variant = (Map) v;
-                                                                            if (variant.containsKey("url")) {
-                                                                                Calendar twitDate = Calendar.getInstance();
-//                                                                                twitDate.setTimeInMillis(Long.parseLong(twit.getTimestampMs()));
-                                                                                twitDate.setTime(new Date());
-                                                                                String folderName = "images/";
-                                                                                folderName += String.valueOf(twitDate.get(Calendar.MONTH) + 1);
-                                                                                folderName += "/";
-                                                                                folderName += twitDate.get(Calendar.DAY_OF_MONTH);
-                                                                                folderName += "/";
-                                                                                Main.downloadImage(folderName, (String) variant.get("url"));
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
+                                                service.submit(() -> extendedMedia.stream().filter(m -> !m.getType().equals("photo")).filter(m -> m.getAdditionalProperties().containsKey("video_info")).forEach(m -> {
+                                                    Map video_info = (Map) m.getAdditionalProperties().get("video_info");
+                                                    List variants = (List) video_info.get("variants");
+                                                    if (variants.size() > 0) {
+                                                        for (Object v : variants) {
+                                                            Map variant = (Map) v;
+                                                            if (variant.containsKey("url"))
+                                                                downloadImage("images/" + produceFileName(), (String) variant.get("url"));
                                                         }
-                                                    } catch (Exception e) {
-                                                        e.printStackTrace();
                                                     }
-                                                });
+                                                }));
                                             }
                                         } catch (IOException e) {
                                             e.printStackTrace();
@@ -152,7 +116,7 @@ public class Main {
         }
     }
 
-    public static void downloadImage(String folder, String url) throws IOException {
+    public static void downloadImage(String folder, String url) {
         File f = new File(folder);
         if (!f.exists()) {
             f.mkdirs();
@@ -173,7 +137,13 @@ public class Main {
         }
     }
 
-    public String produceFileName() {
-
+    public static String produceFileName() {
+        Calendar twitDate = Calendar.getInstance();
+        twitDate.setTime(new Date());
+        String folderName = String.valueOf(twitDate.get(Calendar.MONTH) + 1);
+        folderName += "/";
+        folderName += twitDate.get(Calendar.DAY_OF_MONTH);
+        folderName += "/";
+        return folderName;
     }
 }
