@@ -52,7 +52,7 @@ public class Main {
             client.connect();
             new Thread(() -> {
                 while (true) {
-                    int MESSAGES = 20;
+                    int MESSAGES = 1;
                     if (queue.size() > MESSAGES) {
                         List<String> messages = new ArrayList();
                         queue.drainTo(messages, 20);
