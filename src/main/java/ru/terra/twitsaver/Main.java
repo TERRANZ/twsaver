@@ -70,13 +70,10 @@ public class Main {
                                                 service.submit(() -> extendedMedia.stream().filter(m -> !m.getType().equals("photo")).filter(m -> m.getAdditionalProperties().containsKey("video_info")).forEach(m -> {
                                                     Map video_info = (Map) m.getAdditionalProperties().get("video_info");
                                                     List variants = (List) video_info.get("variants");
-                                                    if (variants.size() > 0) {
-                                                        for (Object v : variants) {
-                                                            Map variant = (Map) v;
-                                                            if (variant.containsKey("url"))
-                                                                downloadImage("images/" + produceFileName(), (String) variant.get("url"));
-                                                        }
-                                                    }
+                                                    if (variants.size() > 0)
+                                                        for (Object v : variants)
+                                                            if (((Map) v).containsKey("url"))
+                                                                downloadImage("images/" + produceFileName(), (String) ((Map) v).get("url"));
                                                 }));
                                             }
                                         } catch (IOException e) {
