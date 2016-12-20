@@ -93,7 +93,7 @@
                 <executions>
                     <execution>
                         <id>copy</id>
-                        <phase>jar</phase>
+                        <phase>compile</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>

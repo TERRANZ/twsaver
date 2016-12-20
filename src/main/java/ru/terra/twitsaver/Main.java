@@ -15,11 +15,11 @@ import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
 import org.apache.log4j.BasicConfigurator;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.slf4j.LoggerFactory;
 import ru.terra.dms.configuration.Configuration;
 import ru.terra.dms.configuration.bean.Pojo;
 import ru.terra.dms.rest.RestService;
 import ru.terra.dms.shared.dto.ObjectDTO;
+import ru.terra.server.dto.CommonDTO;
 import ru.terra.server.dto.LoginDTO;
 import ru.terra.twitsaver.dto.Medium;
 import ru.terra.twitsaver.dto.Twit;
@@ -46,7 +46,7 @@ public class Main {
             System.out.println(configuration.toString());
             final Pojo md5Pojo = configuration.getPojo("TerraFile");
             System.out.println(md5Pojo.toString());
-            ExecutorService service = Executors.newFixedThreadPool(30);
+            ExecutorService service = Executors.newFixedThreadPool(5);
             BlockingQueue<String> queue = new LinkedBlockingQueue<>(10000);
             StatusesFilterEndpoint endpoint = new StatusesFilterEndpoint();
             endpoint.followings(Lists.newArrayList(558929794L, 2224934952L, 256253131L));
@@ -70,11 +70,10 @@ public class Main {
                                     for (String msg : messages) {
                                         try {
                                             Twit twit = new ObjectMapper().readValue(msg, Twit.class);
-                                            service.submit(() -> saveTwit(restService, twit));
+                                            Integer oid = saveTwit(restService, twit);
                                             List<Medium> media = twit.getEntities().getMedia();
                                             if (media.size() > 0) {
-//                                                LoggerFactory.getLogger(Main.class).info(msg);
-                                                service.submit(() -> media.forEach(m -> downloadImage(restService, "images/" + produceFileName(), m.getMediaUrl())));
+                                                service.submit(() -> media.forEach(m -> downloadImage(restService, "images/" + produceFileName(), m.getMediaUrl(), oid)));
                                             }
                                             if (twit.getExtendedEntities() != null && twit.getExtendedEntities().getMedia() != null && twit.getExtendedEntities().getMedia().size() > 0) {
                                                 List<Medium> extendedMedia = twit.getExtendedEntities().getMedia();
@@ -84,7 +83,7 @@ public class Main {
                                                     if (variants.size() > 0)
                                                         for (Object v : variants)
                                                             if (((Map) v).containsKey("url"))
-                                                                downloadImage(restService, "images/" + produceFileName(), (String) ((Map) v).get("url"));
+                                                                downloadImage(restService, "images/" + produceFileName(), (String) ((Map) v).get("url"), oid);
                                                 }));
                                             }
                                         } catch (IOException e) {
@@ -124,7 +123,7 @@ public class Main {
         }
     }
 
-    public static void saveTwit(RestService restService, Twit twit) {
+    public static Integer saveTwit(RestService restService, Twit twit) {
         ObjectDTO dto = new ObjectDTO();
         dto.id = 0;
         dto.type = "TwitterMessage";
@@ -137,13 +136,16 @@ public class Main {
         dto.fields.put("username", twit.getUser().getName());
 
         try {
-            System.out.println("Saving twit " + twit.getIdStr() + ": Result: " + restService.createObjects(new ObjectMapper().writeValueAsString(dto)).errorCode);
+            CommonDTO ret = restService.createObjects(new ObjectMapper().writeValueAsString(dto));
+            System.out.println("Saving twit " + twit.getIdStr() + ": Result: " + ret.errorCode);
+            return ret.id;
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return -1;
     }
 
-    public static void downloadImage(RestService restService, String folder, String url) {
+    public static void downloadImage(RestService restService, String folder, String url, Integer parentId) {
         ObjectDTO dto = new ObjectDTO();
         dto.id = 0;
         dto.type = "TerraFile";
@@ -151,6 +153,8 @@ public class Main {
         dto.fields.put("url", url);
         dto.fields.put("folder", folder);
         dto.fields.put("needcheck", Boolean.toString(true));
+        dto.fields.put("parent", parentId.toString());
+        dto.parent = parentId > 0 ? parentId : null;
 
         try {
             System.out.println("Save image " + url + ": Result: " + restService.createObjects(new ObjectMapper().writeValueAsString(dto)).errorCode);
