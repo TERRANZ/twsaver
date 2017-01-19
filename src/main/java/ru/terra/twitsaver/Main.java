@@ -15,7 +15,6 @@ import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
 import org.apache.log4j.BasicConfigurator;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.slf4j.LoggerFactory;
 import ru.terra.dms.configuration.Configuration;
 import ru.terra.dms.configuration.bean.Pojo;
 import ru.terra.dms.rest.RestService;
@@ -137,7 +136,7 @@ public class Main {
         dto.fields.put("username", twit.getUser().getName());
 
         try {
-            System.out.println("Saving twit " + twit.getIdStr() + ": Result: " + restService.createObjects(new ObjectMapper().writeValueAsString(dto)).errorCode);
+            System.out.println("Saving twit: Result: " + restService.createObjects(new ObjectMapper().writeValueAsString(dto)).errorCode);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -153,7 +152,7 @@ public class Main {
         dto.fields.put("needcheck", Boolean.toString(true));
 
         try {
-            System.out.println("Save image " + url + ": Result: " + restService.createObjects(new ObjectMapper().writeValueAsString(dto)).errorCode);
+            System.out.println("Save image: Result: " + restService.createObjects(new ObjectMapper().writeValueAsString(dto)).errorCode);
         } catch (Exception e) {
             e.printStackTrace();
         }
